@@ -1,0 +1,189 @@
+<!--
+
+MIT License
+
+Copyright (c) 2025 Barry Mitchell, Millennium Technology
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+-->
+<canvas id="canvas"></canvas>
+<script type="e177715303d407c3e9c7f798-text/javascript">
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const elements = [];
+        const baseElementCount = 0.001; // Base number of elements per pixel
+        const mouse = { x: -100, y: -100, vx: 0, vy: 0 }; // Initial mouse position outside the canvas
+        const repulsionRadius = 150;
+        const repulsionStrength = 5; // Increased repulsion strength by 30%
+        const blastRadius = 100; // Define the radius for the initial blast
+        const attractionRadius = 200; // Increased attraction radius
+        const shockWaveMaxRadius = 10000; // Maximum radius for the shock wave
+        const friction = 0.95;
+        const maxRotationSpeed = 0.3;
+        let explosion = false;
+        let holdingMouse = false;
+        let shockWaveRadius = 0;
+
+        class Element {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.velocityX = Math.random() * 2 - 1;
+                this.velocityY = Math.random() * 2 - 1;
+                this.size = Math.random() * 5 + 2;
+                this.rotation = 0;
+                this.rotationSpeed = 0;
+            }
+
+            update() {
+                let dx = mouse.x - this.x;
+                let dy = mouse.y - this.y;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (holdingMouse && distance < attractionRadius) {
+                    let attractionForce = (attractionRadius - distance) / attractionRadius * 10; // Attraction force
+                    let angle = Math.atan2(dy, dx);
+                    this.velocityX = (Math.cos(angle) * attractionForce) - (Math.sin(angle) * attractionForce);
+                    this.velocityY = (Math.sin(angle) * attractionForce) + (Math.cos(angle) * attractionForce);
+                } else if (explosion && distance < shockWaveRadius) {
+                    if (distance < blastRadius) {
+                        let explosionForce = (blastRadius - distance) / blastRadius * 20; // Strong explosion force
+                        this.velocityX += (Math.random() * 2 - 1) * explosionForce;
+                        this.velocityY += (Math.random() * 2 - 1) * explosionForce;
+                    } else {
+                        let shockWaveForce = (shockWaveRadius - distance) / shockWaveRadius * 5; // Lesser shock wave force
+                        this.velocityX += (dx / distance) * shockWaveForce;
+                        this.velocityY += (dy / distance) * shockWaveForce;
+                    }
+                } else if (distance < repulsionRadius) {
+                    let impactForce = (repulsionRadius - distance) / repulsionRadius * repulsionStrength;
+                    this.velocityX -= (dx / distance) * impactForce;
+                    this.velocityY -= (dy / distance) * impactForce;
+
+                    // Calculate rotation speed based on impact force and mouse velocity
+                    let mouseSpeed = Math.sqrt(mouse.vx * mouse.vx + mouse.vy * mouse.vy);
+                    let rotationDirection = (dx * mouse.vy - dy * mouse.vx) > 0 ? 1 : -1;
+                    this.rotationSpeed += rotationDirection * impactForce * mouseSpeed * 0.01;
+
+                    // Apply maximum rotation speed limit
+                    if (this.rotationSpeed > maxRotationSpeed) this.rotationSpeed = maxRotationSpeed;
+                    if (this.rotationSpeed < -maxRotationSpeed) this.rotationSpeed = -maxRotationSpeed;
+                }
+
+                this.velocityX *= friction;
+                this.velocityY *= friction;
+                this.rotationSpeed *= friction;
+
+                this.x += this.velocityX;
+                this.y += this.velocityY;
+                this.rotation += this.rotationSpeed;
+
+                if (this.x < 0 || this.x > canvas.width) this.velocityX *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.velocityY *= -1;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                ctx.strokeStyle = "rgba(211, 211, 211, 0.1)";
+                ctx.fillStyle = "rgba(211, 211, 211, 0.05)";
+                ctx.lineWidth = 1;
+
+                ctx.beginPath();
+                let sides = 5;
+                for (let i = 0; i < sides; i++) {
+                    const angle = (i / sides) * Math.PI * 2;
+                    const px = Math.cos(angle) * this.size;
+                    const py = Math.sin(angle) * this.size;
+                    ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        function createElements() {
+            elements.length = 0; // Clear existing elements
+            const elementCount = Math.floor(canvas.width * canvas.height * baseElementCount);
+            for (let i = 0; i < elementCount; i++) {
+                elements.push(new Element());
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            elements.forEach(element => {
+                element.update();
+                element.draw();
+            });
+
+            // Update shock wave radius
+            if (explosion) {
+                shockWaveRadius += 10; // Increase the radius of the shock wave
+                if (shockWaveRadius > shockWaveMaxRadius) {
+                    explosion = false;
+                    shockWaveRadius = 0;
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener("mousemove", event => {
+            mouse.vx = event.clientX - mouse.x;
+            mouse.vy = event.clientY - mouse.y;
+            mouse.x = event.clientX;
+            mouse.y = event.clientY;
+        });
+
+         window.addEventListener("click", () => {
+            attraction = true;
+            setTimeout(() => {
+                attraction = false;
+                explosion = true;
+                elements.forEach(element => {
+                    let distance = Math.sqrt((element.x - mouse.x) ** 2 + (element.y - mouse.y) ** 2);
+                    if (distance < attractionRadius) {
+                        let explosionForce = (distance / attractionRadius) * 10; // Increase explosion force based on distance
+                        element.velocityX = (Math.random() * 2 - 1) * explosionForce;
+                        element.velocityY = (Math.random() * 2 - 1) * explosionForce;
+                    }
+                });
+                setTimeout(() => {
+                    explosion = false;
+                }, 500); // Adjust the duration of the explosion effect
+            }, 200); // Adjust the duration of the attraction effect
+        });
+
+        window.addEventListener("resize", () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            createElements(); // Recreate elements based on new screen size
+        });
+
+        createElements();
+        animate();
+    </script>
