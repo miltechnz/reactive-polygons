@@ -24,10 +24,29 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 https://github.com/miltechnz/reactive-polygons/
--->
 
+--> 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reactive Polygons</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: green;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
 <canvas id="canvas"></canvas>
-<script type="e177715303d407c3e9c7f798-text/javascript">
+<script>
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
         canvas.width = window.innerWidth;
@@ -190,3 +209,5 @@ https://github.com/miltechnz/reactive-polygons/
         createElements();
         animate();
     </script>
+</body>
+</html>
