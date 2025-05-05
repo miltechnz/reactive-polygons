@@ -1,4 +1,4 @@
-Reactive Polygons 🎉
+<h1>Reactive Polygons 🎉</h1>
 Welcome to Reactive Polygons – the most polygonal, reactive, and downright entertaining library you'll ever add to your project! 🚀
 
 Table of Contents
